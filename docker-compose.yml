@@ -19,6 +19,31 @@ services:
       timeout: 5s
       retries: 3
 
+  # no database connections, does have sso & dashboards.
+  # grist:
+  #   image: gristlabs/grist:latest
+  #   container_name: grist
+  #   ports:
+  #     - "8484:8484" 
+  #   volumes:
+  #     - grist_data:/persist
+  #   environment:
+  #     GRIST_SESSION_SECRET: invent-a-secret-here
+  #     GRIST_DEFAULT_EMAIL: email@example.com
+
+  # no database connections, does have dashboards.
+  # baserow:
+  #   image: baserow/baserow:2.0.6
+  #   container_name: baserow
+  #   environment:
+  #     - BASEROW_PUBLIC_URL=http://localhost
+  #   volumes:
+  #     - baserow_data:/baserow/data
+  #   ports:
+  #     - "80:80"
+  #   restart: no
+
+  # Has database connections, doesn't have (free) sso & dashboards.
   nocodb:
     depends_on:
       mysql:
@@ -33,5 +58,7 @@ services:
       NC_DB: "mysql2://mysql:3306?u=app_nocodb&p=localhost&d=nocodb"
       #NOCODB_ENABLE_SSO: "true"
 volumes:
-  mysql_data: {}
-  nocodb_data: {}
+  mysql_data:
+  nocodb_data: 
+  baserow_data:
+  grist_data:
