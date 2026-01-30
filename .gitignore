@@ -1,0 +1,87 @@
+# Compiled binaries
+bin/
+obj/
+*.dll
+*.exe
+*.exe.config
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Visual Studio
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+.vscode/settings.json
+
+# ReSharper
+.idea/
+*.sln.iml
+_ReSharper*/
+*.resharper
+*.resharper.user
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+
+# Build results
+*_i.c
+*_p.c
+*_i.h
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.scc
+
+# Visual Studio cache/options
+.vs/
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Rider
+.idea/
+*.sln.iml
+
+# Local dotnet tools
+.dotnet/
+
+# User-specific files
+appsettings.local.json
+appsettings.*.local.json
+
+# Misc
+*.swp
+*.swo
+*~
+*.bak

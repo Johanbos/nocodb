@@ -1,8 +1,17 @@
+-- Active: 1769267375767@@localhost@3306@ecommerce_db
 -- Create Sample Database with Users, Products, Stock, Orders, and Shipping Tables
 -- This script creates a complete e-commerce database schema with relationships
 
 CREATE DATABASE IF NOT EXISTS ecommerce_db;
 USE ecommerce_db;
+
+-- Users migrationhistory
+CREATE TABLE _migrationhistory (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    domain VARCHAR(50) NOT NULL UNIQUE,
+    migration int NOT NULL,
+    INDEX idx_domain (domain)
+);
 
 -- Users Table - Application users/staff
 CREATE TABLE users (
@@ -46,7 +55,7 @@ CREATE TABLE products (
     category VARCHAR(50),
     price DECIMAL(10, 2) NOT NULL,
     cost DECIMAL(10, 2),
-    sku VARCHAR(50) NOT NULL UNIQUE,
+    sku VARCHAR(50) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -148,6 +157,10 @@ CREATE TABLE shipping (
 );
 
 -- Sample Data Insertion
+
+-- insert Migration History
+INSERT INTO _migrationhistory (domain, migration) VALUES
+('ecommerce_db', 1);
 
 -- Insert Users
 INSERT INTO users (username, email, password, full_name, role) VALUES
