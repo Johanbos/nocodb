@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 
-namespace efc.Subdomains.FeatureFlags;
+namespace efc.Subdomains.Users;
 
-public class FeatureFlagsDevelopmentMigrator(IHostEnvironment environment)
+public class UsersDevelopmentMigrator(IHostEnvironment environment)
 {
     private IHostEnvironment environment = environment;
-    private FeatureFlagsDbContext ffContext = new FeatureFlagsDbContext();
+    private UsersDbContext ffContext = new UsersDbContext();
 
     public async Task Migrate()
     {
@@ -26,11 +26,11 @@ public class FeatureFlagsDevelopmentMigrator(IHostEnvironment environment)
 
     private async Task Seed()
     {
-        if (await ffContext.FeatureFlags.CountAsync() == 0)
+        if (await ffContext.Users.CountAsync() == 0)
         {
-            var feature1 = new FeatureFlag { Name = "NewFeature1", IsEnabled = true };
-            var feature2 = new FeatureFlag { Name = "NewFeature2", IsEnabled = false };
-            ffContext.FeatureFlags.AddRange(feature1, feature2);
+            var user1 = new User { Name = "User1", CreatedOnUtc = DateTime.UtcNow };
+            var user2 = new User { Name = "User2", CreatedOnUtc = DateTime.UtcNow };
+            ffContext.Users.AddRange(user1, user2);
             await ffContext.SaveChangesAsync();
         }
     }

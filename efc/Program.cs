@@ -1,4 +1,5 @@
 ﻿using efc.Subdomains.FeatureFlags;
+using efc.Subdomains.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,9 +14,11 @@ internal class Program
         var host = builder.Build();
         var environment = host.Services.GetRequiredService<IHostEnvironment>();
 
-        var migrator = new FeatureFlagsDevelopmentMigrator(environment);
-        await migrator.Migrate();
-        
+        var migratorFF = new FeatureFlagsDevelopmentMigrator(environment);
+        await migratorFF.Migrate();
+        var userFF = new UsersDevelopmentMigrator(environment);
+        await userFF.Migrate();
+
         using var ffContext = new FeatureFlagsDbContext();
 
         var feature = new FeatureFlag { Name = "OldFeature", IsEnabled = true };
