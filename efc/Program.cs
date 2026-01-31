@@ -1,8 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using efc.Subdomains.FeatureFlags;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+
+namespace efc;
 
 internal class Program
 {
@@ -12,28 +13,10 @@ internal class Program
         var host = builder.Build();
         var environment = host.Services.GetRequiredService<IHostEnvironment>();
 
+        var migrator = new FeatureFlagsDevelopmentMigrator(environment);
+        await migrator.Migrate();
+        
         using var ffContext = new FeatureFlagsDbContext();
-
-        if (environment.IsDevelopment())
-        {
-            await ffContext.Database.MigrateAsync();
-        }
-        else
-        {
-            /* In Staging & Production use in pipeline:
-            ```
-            dotnet tool install --global dotnet-ef
-            ForEach ($dbcontext in (dotnet ef dbcontext list --no-build)) { dotnet ef database update --context $dbcontext }
-            ```
-            On your local machine use:
-            ```
-            $subdomain = "FeatureFlags"
-            $migrationName = "Awesome"
-            $dbcontext = $subdomain + "DbContext"
-            dotnet ef migrations add $migrationName --context $dbcontext
-            ```
-            */
-        }
 
         var feature = new FeatureFlag { Name = "OldFeature", IsEnabled = true };
         ffContext.FeatureFlags.Add(feature);
@@ -46,24 +29,4 @@ internal class Program
         Console.WriteLine($"Found: {list.Count}");
         Console.WriteLine($"Total FeatureFlags: {count}");
     }
-}
-
-public class FeatureFlagsDbContext : DbContext
-{
-    static readonly string connectionString = "Server=localhost;Database=ecommerce_db;User Id=root;Password=localhost;";
-
-    public DbSet<FeatureFlag> FeatureFlags { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-    }
-}
-
-public class FeatureFlag
-{
-    [Key]
-    public int Id { get; set; }
-    public required string Name { get; set; }
-    public bool IsEnabled { get; set; }
 }
