@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
-using efc.Database;
-using Microsoft.EntityFrameworkCore;
+using efc.Models;
+using Db = efc.Database;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -14,59 +14,56 @@ internal class Program
         var host = builder.Build();
         var environment = host.Services.GetRequiredService<IHostEnvironment>();
 
-        var migratorFF = new FeatureFlagsDevelopmentMigrator(environment);
+        var migratorFF = new Db.FeatureFlagsDevelopmentMigrator(environment);
         await migratorFF.Migrate();
 
-        using var ffContext = new FeatureFlagsDbContext();
+        await Save();
+        var result = await Load();
+        await Validate(result.Item1, result.Item2);
+    }
 
-        await ffContext.Database.BeginTransactionAsync();
+    private static async Task<(FeatureFlag, FeatureFlagUser)> Load()
+    {
+        throw new NotImplementedException();
+    }
 
+    private static async Task Save()
+    {
+        using var ffContext = new Db.FeatureFlagsDbContext();
         var featureFlagRepository = new FeatureFlagRepository(ffContext);
 
-        var user1 = new FeatureFlagUser { UserName = "user1", CreatedOnUtc = DateTime.UtcNow };
-        var user2 = new FeatureFlagUser { UserName = "user2", CreatedOnUtc = DateTime.UtcNow };
-        var feature = new FeatureFlag { Name = "Feature X", IsEnabled = false, CreatedOnUtc = DateTime.UtcNow };
-        feature.UserAssignments =
+        var user1 = new FeatureFlagUser("user1", DateTime.UtcNow);
+        var user2 = new FeatureFlagUser("user2", DateTime.UtcNow);
+        var feature = new FeatureFlag("New Feature", true, DateTime.UtcNow, null, null,
         [
-            new() { FeatureFlag = feature, FeatureFlagUser = user1, AssignedOnUtc = DateTime.UtcNow },
-            new() { FeatureFlag = feature, FeatureFlagUser = user2, AssignedOnUtc = DateTime.UtcNow }
-        ];
-        ffContext.FeatureFlags.Add(feature);
-        await ffContext.SaveChangesAsync();
-        await ffContext.Database.CommitTransactionAsync();
+            new(user1, DateTime.UtcNow ),
+            new(user2, DateTime.UtcNow )
+        ]);
+        feature.UserAssignments.ForEach(assignment => assignment.FeatureFlag = feature);
+        user1.FeatureFlagAssignments.AddRange(feature.UserAssignments.Where(assignment => assignment.FeatureFlagUser == user1));
+        user2.FeatureFlagAssignments.AddRange(feature.UserAssignments.Where(assignment => assignment.FeatureFlagUser == user2));
+
+        await featureFlagRepository.Save(feature);
+    }
+
+    private static async Task Validate(FeatureFlag feature, FeatureFlagUser user1)
+    {
+        using var ffContext = new Db.FeatureFlagsDbContext();
+        var featureFlagRepository = new FeatureFlagRepository(ffContext);
+
+        var jsonSerializerOptions = new JsonSerializerOptions()
+        {
+            WriteIndented = true,
+            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve
+        };
 
         Console.WriteLine("Feature Flag with User Assignments:");
-        Console.WriteLine(JsonSerializer.Serialize(feature, new JsonSerializerOptions { 
-            WriteIndented = true, 
-            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve 
-        }));
+        Console.WriteLine(JsonSerializer.Serialize(feature, jsonSerializerOptions));
 
         Console.WriteLine("Feature Flag User 1 with User Assignments:");
-        Console.WriteLine(JsonSerializer.Serialize(user1, new JsonSerializerOptions { 
-            WriteIndented = true, 
-            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve 
-        }));
+        Console.WriteLine(JsonSerializer.Serialize(user1, jsonSerializerOptions));
 
-        var featureFlags = await ffContext.FeatureFlags.Include(f => f.UserAssignments).ToListAsync();
-        ffContext.FeatureFlags.RemoveRange(featureFlags);
-        var featureFlagsUsers = await ffContext.FeatureFlagUsers.ToListAsync();
-        ffContext.FeatureFlagUsers.RemoveRange(featureFlagsUsers);
-        await ffContext.SaveChangesAsync();
-        var countFeatureFlags = await ffContext.FeatureFlags.CountAsync();
-        var countUserAssignments = await ffContext.FeatureFlagAssignments.CountAsync();
-        var countUsers = await ffContext.FeatureFlagUsers.CountAsync();
-        Console.WriteLine($"Total FeatureFlags: {countFeatureFlags}");
-        Console.WriteLine($"Total User Assignments: {countUserAssignments}");
-        Console.WriteLine($"Total Users: {countUsers}");
-    }
-}
-
-internal class FeatureFlagRepository
-{
-    private FeatureFlagsDbContext ffContext;
-
-    public FeatureFlagRepository(FeatureFlagsDbContext ffContext)
-    {
-        this.ffContext = ffContext;
+        await featureFlagRepository.DeleteAll();
+        await featureFlagRepository.VerifyDeleted();
     }
 }
