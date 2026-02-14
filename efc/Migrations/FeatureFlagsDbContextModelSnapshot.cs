@@ -100,7 +100,7 @@ namespace efc.Migrations
 
             modelBuilder.Entity("efc.Database.FeatureFlagUserAssignment", b =>
                 {
-                    b.HasOne("efc.Database.FeatureFlag", null)
+                    b.HasOne("efc.Database.FeatureFlag", "FeatureFlag")
                         .WithMany("UserAssignments")
                         .HasForeignKey("FeatureFlagId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -111,6 +111,8 @@ namespace efc.Migrations
                         .HasForeignKey("FeatureFlagUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("FeatureFlag");
 
                     b.Navigation("FeatureFlagUser");
                 });

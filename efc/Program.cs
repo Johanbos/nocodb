@@ -25,11 +25,12 @@ internal class Program
 
         var user1 = new FeatureFlagUser { UserName = "user1", CreatedOnUtc = DateTime.UtcNow };
         var user2 = new FeatureFlagUser { UserName = "user2", CreatedOnUtc = DateTime.UtcNow };
-        var feature = new FeatureFlag { Name = "Feature X", IsEnabled = false, CreatedOnUtc = DateTime.UtcNow, UserAssignments =
+        var feature = new FeatureFlag { Name = "Feature X", IsEnabled = false, CreatedOnUtc = DateTime.UtcNow };
+        feature.UserAssignments =
         [
-            new() { FeatureFlagUser = user1, AssignedOnUtc = DateTime.UtcNow },
-            new() { FeatureFlagUser = user2, AssignedOnUtc = DateTime.UtcNow }
-        ]};
+            new() { FeatureFlag = feature, FeatureFlagUser = user1, AssignedOnUtc = DateTime.UtcNow },
+            new() { FeatureFlag = feature, FeatureFlagUser = user2, AssignedOnUtc = DateTime.UtcNow }
+        ];
         ffContext.FeatureFlags.Add(feature);
         await ffContext.SaveChangesAsync();
         await ffContext.Database.CommitTransactionAsync();
