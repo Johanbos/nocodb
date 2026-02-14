@@ -36,12 +36,9 @@ internal class Program
         var user2 = new FeatureFlagUser("user2", DateTime.UtcNow);
         var feature = new FeatureFlag("New Feature", true, DateTime.UtcNow, null, null,
         [
-            new(user1, DateTime.UtcNow ),
-            new(user2, DateTime.UtcNow )
+            new(user1.UserName, DateTime.UtcNow),
+            new(user2.UserName, DateTime.UtcNow)
         ]);
-        feature.UserAssignments.ForEach(assignment => assignment.FeatureFlag = feature);
-        user1.FeatureFlagAssignments.AddRange(feature.UserAssignments.Where(assignment => assignment.FeatureFlagUser == user1));
-        user2.FeatureFlagAssignments.AddRange(feature.UserAssignments.Where(assignment => assignment.FeatureFlagUser == user2));
 
         await featureFlagRepository.Save(feature);
     }

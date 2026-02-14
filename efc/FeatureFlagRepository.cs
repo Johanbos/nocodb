@@ -23,19 +23,17 @@ internal class FeatureFlagRepository(Db.FeatureFlagsDbContext dbContext)
         record.UpdatedOnUtc = model.UpdatedOnUtc;
 
         // Delete removed user assignments
-        record.UserAssignments.RemoveAll(db => !model.UserAssignments.Any(m => m.FeatureFlagUser.UserName == db.FeatureFlagUser.UserName));
-
+        record.UserAssignments.RemoveAll(db => !model.UserAssignments.Any(m => m.UserName == db.FeatureFlagUser.UserName));
         var userRecords = record.UserAssignments.Select(ua => ua.FeatureFlagUser).ToList();
-
         // Update existing and add new user assignments
         foreach (var modelAssignment in model.UserAssignments)
         {
-            var userRecord = userRecords.FirstOrDefault(ur => ur.UserName == modelAssignment.FeatureFlagUser.UserName);
-            userRecord ??= new Db.FeatureFlagUser{ UserName = modelAssignment.FeatureFlagUser.UserName };
-            MapModelToRecord(modelAssignment.FeatureFlagUser, userRecord);
-
-            var recordAssignment = record.UserAssignments.FirstOrDefault(db => db.FeatureFlagUser.UserName == modelAssignment.FeatureFlagUser.UserName);
-            recordAssignment ??= new Db.FeatureFlagUserAssignment { FeatureFlag = record, FeatureFlagUser = userRecord };
+            var recordUser = userRecords.FirstOrDefault(u => u.UserName == modelAssignment.UserName);
+            recordUser ??= dbContext.FeatureFlagUsers.FirstOrDefault(u => u.UserName == modelAssignment.UserName);
+            recordUser ??= new Db.FeatureFlagUser { UserName = modelAssignment.UserName };
+            
+            var recordAssignment = record.UserAssignments.FirstOrDefault(db => db.FeatureFlagUser.UserName == modelAssignment.UserName);
+            recordAssignment ??= new Db.FeatureFlagUserAssignment{ FeatureFlag = record, FeatureFlagUser = recordUser };
             MapModelToRecord(modelAssignment, recordAssignment);
         }
     }
@@ -43,7 +41,6 @@ internal class FeatureFlagRepository(Db.FeatureFlagsDbContext dbContext)
     private void MapModelToRecord(Models.FeatureFlagUserAssignment model, Db.FeatureFlagUserAssignment record)
     {
         record.AssignedOnUtc = model.AssignedOnUtc;
-        MapModelToRecord(model.FeatureFlagUser, record.FeatureFlagUser);
     }
 
     private void MapModelToRecord(Models.FeatureFlagUser model, Db.FeatureFlagUser record)
