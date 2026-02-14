@@ -1,6 +1,5 @@
-﻿using System.Security;
-using System.Text.Json;
-using efc.Subdomains.FeatureFlags;
+﻿using System.Text.Json;
+using efc.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,6 +20,9 @@ internal class Program
         using var ffContext = new FeatureFlagsDbContext();
 
         await ffContext.Database.BeginTransactionAsync();
+
+        var featureFlagRepository = new FeatureFlagRepository(ffContext);
+
 
         var user1 = new FeatureFlagUser { UserName = "user1", CreatedOnUtc = DateTime.UtcNow };
         var user2 = new FeatureFlagUser { UserName = "user2", CreatedOnUtc = DateTime.UtcNow };
@@ -47,5 +49,15 @@ internal class Program
         Console.WriteLine($"Total FeatureFlags: {countFeatureFlags}");
         Console.WriteLine($"Total User Assignments: {countUserAssignments}");
         Console.WriteLine($"Total Users: {countUsers}");
+    }
+}
+
+internal class FeatureFlagRepository
+{
+    private FeatureFlagsDbContext ffContext;
+
+    public FeatureFlagRepository(FeatureFlagsDbContext ffContext)
+    {
+        this.ffContext = ffContext;
     }
 }

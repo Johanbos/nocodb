@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace efc.Subdomains.FeatureFlags;
+namespace efc.Database;
 
 /// <summary>
 /// Database context for Feature Flags. Update with:

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace efc.Subdomains.FeatureFlags;
+namespace efc.Database;
 
 public class FeatureFlagUser
 {

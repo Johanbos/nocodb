@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 
-namespace efc.Subdomains.FeatureFlags;
+namespace efc.Database;
 
 public class FeatureFlagsDevelopmentMigrator(IHostEnvironment environment)
 {
