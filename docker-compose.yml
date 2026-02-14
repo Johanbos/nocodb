@@ -44,6 +44,7 @@ services:
   #   restart: no
 
   # Has database connections, doesn't have (free) sso & dashboards.
+  # https://nocodb.com/docs/self-hosting/environment-variables
   nocodb:
     depends_on:
       mysql:
@@ -56,7 +57,13 @@ services:
       - nocodb_data:/usr/app/data
     environment:
       NC_DB: "mysql2://mysql:3306?u=app_nocodb&p=localhost&d=nocodb"
+      NC_DISABLE_TELE: "true"
+      NC_ADMIN_EMAIL: "admin@localhost.com"
+      NC_ADMIN_PASSWORD: "localhost"
+      NC_INVITE_ONLY_SIGNUP: "true"
+      NC_DISABLE_SUPPORT_CHAT: "true"
       #NOCODB_ENABLE_SSO: "true"
+ 
 volumes:
   mysql_data:
   nocodb_data: 
