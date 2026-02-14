@@ -6,6 +6,7 @@ public class FeatureFlag
 {
     [Key]
     public int Id { get; set; }
+    [Required, MaxLength(100)]
     public required string Name { get; set; }
     public bool IsEnabled { get; set; }
     public DateTime? EnabledOn { get; set; }
