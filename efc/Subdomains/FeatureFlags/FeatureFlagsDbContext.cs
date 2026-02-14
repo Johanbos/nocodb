@@ -16,6 +16,8 @@ public class FeatureFlagsDbContext : DbContext
     static readonly string connectionString = "Server=localhost;Database=backend-v2;User Id=root;Password=localhost;";
 
     public DbSet<FeatureFlag> FeatureFlags { get; set; }
+    public DbSet<FeatureFlagUserAssignment> FeatureFlagAssignments { get; set; }
+    public DbSet<FeatureFlagUser> FeatureFlagUsers { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

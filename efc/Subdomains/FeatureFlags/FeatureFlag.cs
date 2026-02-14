@@ -11,4 +11,5 @@ public class FeatureFlag
     public DateTime? EnabledOn { get; set; }
     public DateTime CreatedOnUtc { get; set; }
     public DateTime? UpdatedOnUtc { get; set; }
+    public List<FeatureFlagUserAssignment> UserAssignments { get; set; } = new();
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using efc.Subdomains.FeatureFlags;
 
@@ -11,9 +12,11 @@ using efc.Subdomains.FeatureFlags;
 namespace efc.Migrations
 {
     [DbContext(typeof(FeatureFlagsDbContext))]
-    partial class FeatureFlagsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260214083234_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,7 +88,10 @@ namespace efc.Migrations
                     b.Property<int>("FeatureFlagId")
                         .HasColumnType("int");
 
-                    b.Property<int>("FeatureFlagUserId")
+                    b.Property<int?>("FeatureFlagUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -107,9 +113,7 @@ namespace efc.Migrations
 
                     b.HasOne("efc.Subdomains.FeatureFlags.FeatureFlagUser", null)
                         .WithMany("FeatureFlagAssignments")
-                        .HasForeignKey("FeatureFlagUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("FeatureFlagUserId");
                 });
 
             modelBuilder.Entity("efc.Subdomains.FeatureFlags.FeatureFlag", b =>

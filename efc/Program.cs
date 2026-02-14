@@ -1,5 +1,6 @@
-﻿using efc.Subdomains.FeatureFlags;
-using efc.Subdomains.Users;
+﻿using System.Security;
+using System.Text.Json;
+using efc.Subdomains.FeatureFlags;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -16,20 +17,35 @@ internal class Program
 
         var migratorFF = new FeatureFlagsDevelopmentMigrator(environment);
         await migratorFF.Migrate();
-        var userFF = new UsersDevelopmentMigrator(environment);
-        await userFF.Migrate();
 
         using var ffContext = new FeatureFlagsDbContext();
 
-        var feature = new FeatureFlag { Name = "OldFeature", IsEnabled = true };
-        ffContext.FeatureFlags.Add(feature);
+        await ffContext.Database.BeginTransactionAsync();
+
+        var user1 = new FeatureFlagUser { UserName = "user1", CreatedOnUtc = DateTime.UtcNow };
+        var user2 = new FeatureFlagUser { UserName = "user2", CreatedOnUtc = DateTime.UtcNow };
+        ffContext.FeatureFlagUsers.AddRange(user1, user2);
         await ffContext.SaveChangesAsync();
 
-        var list = await ffContext.FeatureFlags
-            .FromSql($"SELECT * FROM FeatureFlags where name like 'New%'")
-            .ToListAsync();
-        var count = await ffContext.FeatureFlags.CountAsync();
-        Console.WriteLine($"Found: {list.Count}");
-        Console.WriteLine($"Total FeatureFlags: {count}");
+        var feature = new FeatureFlag { Name = "Feature X", IsEnabled = false, CreatedOnUtc = DateTime.UtcNow, UserAssignments = new List<FeatureFlagUserAssignment>
+        {
+            new() { FeatureFlagUserId = user1.Id, AssignedOnUtc = DateTime.UtcNow },
+            new() { FeatureFlagUserId = user2.Id, AssignedOnUtc = DateTime.UtcNow }
+        } };
+        ffContext.FeatureFlags.Add(feature);
+        await ffContext.SaveChangesAsync();
+        await ffContext.Database.CommitTransactionAsync();
+        var list = await ffContext.FeatureFlags.Include(f => f.UserAssignments).ToListAsync();
+        Console.WriteLine("Feature Flags with User Assignments:");
+        Console.WriteLine(JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true }));
+
+        ffContext.FeatureFlags.RemoveRange(list);
+        await ffContext.SaveChangesAsync();
+        var countFeatureFlags = await ffContext.FeatureFlags.CountAsync();
+        var countUserAssignments = await ffContext.FeatureFlagAssignments.CountAsync();
+        var countUsers = await ffContext.FeatureFlagUsers.CountAsync();
+        Console.WriteLine($"Total FeatureFlags: {countFeatureFlags}");
+        Console.WriteLine($"Total User Assignments: {countUserAssignments}");
+        Console.WriteLine($"Total Users: {countUsers}");
     }
 }

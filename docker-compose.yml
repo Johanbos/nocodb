@@ -8,9 +8,9 @@ services:
       - "3306:3306"    
     restart: no
     environment:
-      MYSQL_DATABASE: nocodb
+      MYSQL_DATABASE: mysql
       MYSQL_ROOT_PASSWORD: localhost
-      MYSQL_USER: app_nocodb
+      MYSQL_USER: admin
       MYSQL_PASSWORD: localhost
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
@@ -56,7 +56,7 @@ services:
     volumes:
       - nocodb_data:/usr/app/data
     environment:
-      NC_DB: "mysql2://mysql:3306?u=app_nocodb&p=localhost&d=nocodb"
+      NC_DB: "mysql2://mysql:3306?u=admin&p=localhost&d=nocodb"
       NC_DISABLE_TELE: "true"
       NC_ADMIN_EMAIL: "admin@localhost.com"
       NC_ADMIN_PASSWORD: "localhost"
