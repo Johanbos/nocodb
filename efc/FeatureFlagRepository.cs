@@ -1,3 +1,4 @@
+using efc.Models;
 using Microsoft.EntityFrameworkCore;
 using Db = efc.Database;
 
@@ -5,48 +6,76 @@ namespace efc;
 
 internal class FeatureFlagRepository(Db.FeatureFlagsDbContext dbContext)
 {
-    internal async Task Save(Models.FeatureFlag featureModel)
+    internal async Task Save(Models.FeatureFlag featureFlagModel)
     {
-        var featureRecord = dbContext.ChangeTracker.Entries<Db.FeatureFlag>().FirstOrDefault(e => e.Entity.Name == featureModel.Name)?.Entity;
-        featureRecord ??= await dbContext.FeatureFlags.Include(f => f.UserAssignments).ThenInclude(ua => ua.FeatureFlagUser).FirstOrDefaultAsync(f => f.Name == featureModel.Name);
-        featureRecord ??= new Db.FeatureFlag { Name = featureModel.Name };
-        MapModelToRecord(featureModel, featureRecord);
+        var featureFlagRecord = dbContext.ChangeTracker.Entries<Db.FeatureFlag>()
+            .FirstOrDefault(e => e.Entity.Name == featureFlagModel.Name)?.Entity;
+        featureFlagRecord ??= await dbContext.FeatureFlags
+            .Include(f => f.UserAssignments)
+            .ThenInclude(ua => ua.FeatureFlagUser)
+            .FirstOrDefaultAsync(f => f.Name == featureFlagModel.Name);
+        featureFlagRecord ??= dbContext.FeatureFlags.Add(new Db.FeatureFlag()).Entity;
+
+        featureFlagRecord.Name = featureFlagModel.Name;
+        featureFlagRecord.IsEnabled = featureFlagModel.IsEnabled;
+        featureFlagRecord.CreatedOnUtc = featureFlagModel.CreatedOnUtc;
+        featureFlagRecord.EnabledOn = featureFlagModel.EnabledOn;
+        featureFlagRecord.UpdatedOnUtc = featureFlagModel.UpdatedOnUtc;
+
+        var userRecords = await dbContext.FeatureFlagUsers.ToListAsync();
+
+        // Update existing and add new user assignments
+        foreach (var modelUserAssignment in featureFlagModel.UserAssignments)
+        {
+            var recordUser = userRecords.FirstOrDefault(u => u.UserName == modelUserAssignment.UserName);
+            recordUser ??= dbContext.FeatureFlagUsers.Add(new Db.FeatureFlagUser { UserName = modelUserAssignment.UserName, CreatedOnUtc = modelUserAssignment.AssignedOnUtc }).Entity;
+            
+            var recordUserAssignment = featureFlagRecord.UserAssignments.FirstOrDefault(db => db.FeatureFlagUser.UserName == modelUserAssignment.UserName);
+            recordUserAssignment ??= dbContext.FeatureFlagAssignments.Add(new Db.FeatureFlagUserAssignment { FeatureFlag = featureFlagRecord, FeatureFlagUser = recordUser }).Entity;
+
+            recordUserAssignment.AssignedOnUtc = modelUserAssignment.AssignedOnUtc;
+        }
+
         await dbContext.SaveChangesAsync();
     }
 
-    private void MapModelToRecord(Models.FeatureFlag model, Db.FeatureFlag record)
+    internal async Task<FeatureFlagUser?> LoadUser(string username)
     {
-        record.Name = model.Name;
-        record.IsEnabled = model.IsEnabled;
-        record.CreatedOnUtc = model.CreatedOnUtc;
-        record.EnabledOn = model.EnabledOn;
-        record.UpdatedOnUtc = model.UpdatedOnUtc;
+        var userRecord = await dbContext.FeatureFlagUsers
+            .Include(u => u.FeatureFlagAssignments)
+            .ThenInclude(ua => ua.FeatureFlag)
+            .FirstOrDefaultAsync(u => u.UserName == username);
 
-        // Delete removed user assignments
-        record.UserAssignments.RemoveAll(db => !model.UserAssignments.Any(m => m.UserName == db.FeatureFlagUser.UserName));
-        var userRecords = record.UserAssignments.Select(ua => ua.FeatureFlagUser).ToList();
-        // Update existing and add new user assignments
-        foreach (var modelAssignment in model.UserAssignments)
+        if (userRecord == null)
         {
-            var recordUser = userRecords.FirstOrDefault(u => u.UserName == modelAssignment.UserName);
-            recordUser ??= dbContext.FeatureFlagUsers.FirstOrDefault(u => u.UserName == modelAssignment.UserName);
-            recordUser ??= new Db.FeatureFlagUser { UserName = modelAssignment.UserName };
-            
-            var recordAssignment = record.UserAssignments.FirstOrDefault(db => db.FeatureFlagUser.UserName == modelAssignment.UserName);
-            recordAssignment ??= new Db.FeatureFlagUserAssignment{ FeatureFlag = record, FeatureFlagUser = recordUser };
-            MapModelToRecord(modelAssignment, recordAssignment);
+            return null;
         }
+        
+        var featureFlagAssignments = userRecord.FeatureFlagAssignments
+            .Select(ua => new FeatureFlagUserAssignment(ua.FeatureFlagUser.UserName, ua.AssignedOnUtc)).ToList();
+        return new FeatureFlagUser(userRecord.UserName, userRecord.CreatedOnUtc, featureFlagAssignments);
     }
 
-    private void MapModelToRecord(Models.FeatureFlagUserAssignment model, Db.FeatureFlagUserAssignment record)
+    internal async Task<FeatureFlag?> Load(string code)
     {
-        record.AssignedOnUtc = model.AssignedOnUtc;
-    }
+        var featureRecord = await dbContext.FeatureFlags
+            .Include(f => f.UserAssignments)
+            .ThenInclude(ua => ua.FeatureFlagUser)
+            .FirstOrDefaultAsync(f => f.Name == code);
 
-    private void MapModelToRecord(Models.FeatureFlagUser model, Db.FeatureFlagUser record)
-    {
-        record.UserName = model.UserName;
-        record.CreatedOnUtc = model.CreatedOnUtc;
+        if (featureRecord == null)
+        {
+            return null;
+        }
+
+        return new FeatureFlag(
+            featureRecord.Name,
+            featureRecord.IsEnabled,
+            featureRecord.CreatedOnUtc,
+            featureRecord.EnabledOn,
+            featureRecord.UpdatedOnUtc,
+            featureRecord.UserAssignments.Select(ua => new FeatureFlagUserAssignment(ua.FeatureFlagUser.UserName, ua.AssignedOnUtc)).ToList()
+        );
     }
 
     internal async Task DeleteAll()
@@ -63,6 +92,7 @@ internal class FeatureFlagRepository(Db.FeatureFlagsDbContext dbContext)
         var countFeatureFlags = await dbContext.FeatureFlags.CountAsync();
         var countUserAssignments = await dbContext.FeatureFlagAssignments.CountAsync();
         var countUsers = await dbContext.FeatureFlagUsers.CountAsync();
+        
         if (countFeatureFlags == 0 && countUserAssignments == 0 && countUsers == 0)
         {
             Console.WriteLine("All feature flags, user assignments and users have been deleted successfully.");

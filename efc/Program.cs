@@ -17,34 +17,38 @@ internal class Program
         var migratorFF = new Db.FeatureFlagsDevelopmentMigrator(environment);
         await migratorFF.Migrate();
 
-        await Save();
-        var result = await Load();
+        await Save("New Feature", "user1");
+        var result = await Load("New Feature", "user1");
         await Validate(result.Item1, result.Item2);
     }
 
-    private static async Task<(FeatureFlag, FeatureFlagUser)> Load()
+    private static async Task<(FeatureFlag?, FeatureFlagUser?)> Load(string code, string username)
     {
-        throw new NotImplementedException();
+        using var ffContext = new Db.FeatureFlagsDbContext();
+        var featureFlagRepository = new FeatureFlagRepository(ffContext);
+        var featureflag = await featureFlagRepository.Load(code);
+        var user1 = await featureFlagRepository.LoadUser(username);
+        return (featureflag, user1);
     }
 
-    private static async Task Save()
+    private static async Task Save(string code, string username)
     {
         using var ffContext = new Db.FeatureFlagsDbContext();
         var featureFlagRepository = new FeatureFlagRepository(ffContext);
 
-        var user1 = new FeatureFlagUser("user1", DateTime.UtcNow);
-        var user2 = new FeatureFlagUser("user2", DateTime.UtcNow);
-        var feature = new FeatureFlag("New Feature", true, DateTime.UtcNow, null, null,
+        var feature = new FeatureFlag(code, true, DateTime.UtcNow, null, null,
         [
-            new(user1.UserName, DateTime.UtcNow),
-            new(user2.UserName, DateTime.UtcNow)
+            new(username, DateTime.UtcNow)
         ]);
 
         await featureFlagRepository.Save(feature);
     }
 
-    private static async Task Validate(FeatureFlag feature, FeatureFlagUser user1)
+    private static async Task Validate(FeatureFlag? feature, FeatureFlagUser? user1)
     {
+        if (feature == null) throw new InvalidOperationException("Feature flag not found.");
+        if (user1 == null) throw new InvalidOperationException("User not found.");
+
         using var ffContext = new Db.FeatureFlagsDbContext();
         var featureFlagRepository = new FeatureFlagRepository(ffContext);
 
