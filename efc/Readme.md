@@ -1,3 +1,36 @@
+
+## Domain Model
+The FeatureFlag domain has two root aggregates, the featureflag model and the featureflag user model. The following invariants apply:
+
+1. A user can only be assigned to a feature flag once.
+1. Nothing is ever deleted, the featureflag can only be archived.
+
+:::mermaid
+classDiagram
+    class FeatureFlag {
+        - string Name
+        - bool IsEnabled
+        - DateTime CreatedOnUtc
+        - DateTime? EnabledOn
+        - DateTime? UpdatedOnUtc
+        - List~FeatureFlagUserAssignment~ UserAssignments
+    }
+
+    class FeatureFlagUser {
+        - string UserName
+        - DateTime CreatedOnUtc
+        - List~FeatureFlagUserAssignment~ FeatureFlagAssignments
+    }
+
+    class FeatureFlagUserAssignment {
+        - string UserName
+        - DateTime AssignedOnUtc
+    }
+
+    FeatureFlag "1" o-- "*" FeatureFlagUserAssignment : has
+    FeatureFlagUser "1" o-- "*" FeatureFlagUserAssignment : has
+:::
+
 ## Mapping of Entity (Records), Models and DataTransferObjects (DTO's)
 
 :::mermaid
